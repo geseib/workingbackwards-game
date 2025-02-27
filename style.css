@@ -814,8 +814,9 @@ form {
   justify-content: center;
   flex-wrap: wrap;
   gap: 20px;
-  margin-bottom: 20px;
+  margin: 15px 0 20px 0; /* Added top margin for spacing */
   width: 100%;
+  padding-top: 10px; /* Added padding at the top */
 }
 
 .player-score-item {
@@ -858,7 +859,7 @@ form {
 .player-score-item.bar-raiser::after {
   content: '👑'; /* Crown emoji */
   position: absolute;
-  top: -10px;
+  top: -15px;
   right: -5px;
   font-size: 18px;
 }
