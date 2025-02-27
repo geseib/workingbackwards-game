@@ -657,7 +657,7 @@ form {
   background-color: lightSkyBlue;  /* Light Sky Blue Background */
   border: 2px solid #ccc;
   border-radius: 10px;
-  padding: 20px;
+  padding: 0;                     /* No padding when collapsed */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   max-height: 0;                  /* Collapsed by default */
   overflow: hidden;               /* Hide content when collapsed */
@@ -666,11 +666,18 @@ form {
 
 .rules.open {
   max-height: 1000px;             /* Adjust this if the content is very long */
+  padding: 20px;                  /* Add padding when open */
   transition: max-height 0.5s ease-in, padding 0.3s ease-in;
 }
 
-.rules h2, .rules h3 {
-  margin-top: 10px;
+.rules h2 {
+  margin-top: 0;                  /* Remove top margin from the main heading */
+  color: #333;
+  padding-top: 5px;               /* Add some space inside instead */
+}
+
+.rules h3 {
+  margin-top: 15px;               /* Increase space between sections */
   color: #333;
 }
 
