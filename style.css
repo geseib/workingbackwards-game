@@ -825,7 +825,7 @@ form {
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, background-color 0.2s ease;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -836,6 +836,31 @@ form {
 
 .player-score-item:active {
   transform: scale(0.95);
+}
+
+/* Bar-raiser styling */
+.player-score-item.bar-raiser {
+  background-color: #2c4f7c; /* Same as rules section dark blue */
+  cursor: not-allowed;
+  border: 2px solid #ffd700; /* Gold border to highlight */
+  position: relative;
+}
+
+.player-score-item.bar-raiser:hover {
+  transform: none; /* No hover effect for bar-raiser */
+  background-color: #2c4f7c;
+}
+
+.player-score-item.bar-raiser .player-name {
+  color: white; /* White text for contrast */
+}
+
+.player-score-item.bar-raiser::after {
+  content: '👑'; /* Crown emoji */
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  font-size: 18px;
 }
 
 .player-score-item .player-name {

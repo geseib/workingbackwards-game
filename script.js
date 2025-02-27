@@ -511,11 +511,41 @@ function getNextPlayer() {
 // Function to update the Bar-raiser display
 const playersColumn = document.querySelector('.players-column h2');
 
+// Variable to keep track of the current bar-raiser
+let currentBarRaiser = '';
+
 function updateBarRaiser() {
   const nextPlayer = getNextPlayer();
   
+  // Set the current bar-raiser
+  currentBarRaiser = nextPlayer;
+  
   // Display the selected player
   playersColumn.innerHTML = `<h2>Bar-raiser: ${nextPlayer}</h2>`;
+  
+  // Update the player score row to highlight the bar-raiser
+  updatePlayerHighlights();
+}
+
+// Function to update player highlights based on bar-raiser status
+function updatePlayerHighlights() {
+  // Get all player score items
+  const playerScoreItems = document.querySelectorAll('.player-score-item');
+  
+  // Update each item's styling based on whether it's the bar-raiser
+  playerScoreItems.forEach(item => {
+    const playerName = item.querySelector('.player-name').textContent;
+    
+    if (playerName === currentBarRaiser) {
+      item.classList.add('bar-raiser');
+      
+      // Remove the click event listener from the bar-raiser
+      const oldItem = item.cloneNode(true);
+      item.parentNode.replaceChild(oldItem, item);
+    } else {
+      item.classList.remove('bar-raiser');
+    }
+  });
 }
 
 // Note: We'll call this function only when the center logo is clicked
@@ -695,15 +725,23 @@ document.addEventListener('DOMContentLoaded', () => {
     checkedPlayers.forEach(playerName => {
       const scoreItem = document.createElement('div');
       scoreItem.className = 'player-score-item';
+      
+      // Check if this player is the bar-raiser
+      if (playerName === currentBarRaiser) {
+        scoreItem.classList.add('bar-raiser');
+      }
+      
       scoreItem.innerHTML = `
         <div class="player-name">${playerName}</div>
         <div class="player-points" id="score-${playerName.replace(/\s+/g, '-')}">${playerScores[playerName]}</div>
       `;
       
-      // Add click event to increase score
-      scoreItem.addEventListener('click', () => {
-        increasePlayerScore(playerName);
-      });
+      // Only add click event for non-bar-raisers
+      if (playerName !== currentBarRaiser) {
+        scoreItem.addEventListener('click', () => {
+          increasePlayerScore(playerName);
+        });
+      }
       
       playerScoreRow.appendChild(scoreItem);
     });
@@ -793,11 +831,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Reset bar-raiser selection
     currentIndex = -1;
+    currentBarRaiser = '';
     
     // Update displays
     updatePlayerScoreRow();
     updatePlayersList();
   });
+  
+  // Initial call to updatePlayerHighlights to set up correct styling
+  if (typeof updatePlayerHighlights === 'function') {
+    setTimeout(updatePlayerHighlights, 500);
+  }
   
   // Initial rendering
   updatePlayerScoreRow();
