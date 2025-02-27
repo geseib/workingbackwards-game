@@ -434,12 +434,28 @@ function displayBookTitle() {
   setupBook(currentPos, splitBookTitle(bookAlphabet), target);
 }
 
-// Listen for the form submission event and trigger the book title update.
-// (This works in addition to your existing handleInput, so both number and book displays update.)
-document.body.addEventListener("click", function(e) {
-  // A slight delay may help the two animations look in sync.
-  numbersGo();
-  setTimeout(displayBookTitle, 100);
+// Listen for clicks on the center logo to trigger the game turn
+document.addEventListener("DOMContentLoaded", function() {
+  // Get the center logo SVG element
+  const centerLogo = document.querySelector('.osmo-icon-svg');
+  
+  // Make sure it's visually clear that it's clickable
+  if (centerLogo) {
+    centerLogo.style.cursor = 'pointer';
+    
+    // Add click event listener to the logo only
+    centerLogo.addEventListener("click", function(e) {
+      // Update bar-raiser
+      updateBarRaiser();
+      
+      // Update the number and book displays
+      numbersGo();
+      setTimeout(displayBookTitle, 100);
+      
+      // Prevent event from bubbling up
+      e.stopPropagation();
+    });
+  }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -492,15 +508,18 @@ function getNextPlayer() {
   return gamePlayers[currentIndex];
 }
 
-// Example: Display the player in the Players column each time it's called
+// Function to update the Bar-raiser display
 const playersColumn = document.querySelector('.players-column h2');
 
-document.body.addEventListener('click', () => {
+function updateBarRaiser() {
   const nextPlayer = getNextPlayer();
   
   // Display the selected player
   playersColumn.innerHTML = `<h2>Bar-raiser: ${nextPlayer}</h2>`;
-});
+}
+
+// Note: We'll call this function only when the center logo is clicked
+// This is now handled in the centerLogo click event listener
 
 const playerEntriesContainer = document.querySelector('.player-entries');
 
