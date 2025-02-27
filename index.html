@@ -24,6 +24,11 @@
   </section>
     
   <section class="parallax__content">
+    <!-- Player score row at the top -->
+    <div class="player-score-row" id="player-score-row">
+      <!-- Player scores will be displayed here -->
+    </div>
+    
     <div class="column players-column">
   <h2>Players</h2>
   
@@ -313,8 +318,10 @@
           <h3>Sound</h3>
           <button dataSoundOn='off' class='turn-sound-on-btn' onClick={downloadSound(event)}>Sound off</button>
         </div>
-<!-- Add the reset game button here -->
+<!-- Game controls -->
 <section class="settings">
+  <h3>Game Controls</h3>
+  <button id="reset-scores">Reset Scores</button>
   <button id="reset-game">Reset Game</button>
 </section>
 

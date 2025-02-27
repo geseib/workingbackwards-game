@@ -646,42 +646,141 @@ document.addEventListener("DOMContentLoaded", function () {
   displayPlayers();
 });
 
+// Player Score Manager
 document.addEventListener('DOMContentLoaded', () => {
-  const players = [
-    { name: 'Player 1', score: 0 },
-    { name: 'Player 2', score: 0 },
-    { name: 'Player 3', score: 0 }
-  ];
-
+  // Store player scores
+  const playerScores = {};
+  
+  // Get DOM elements
+  const playerScoreRow = document.getElementById('player-score-row');
   const playersList = document.getElementById('players-list');
   const resetGameButton = document.getElementById('reset-game');
+  const resetScoresButton = document.getElementById('reset-scores');
 
-  function renderPlayers() {
+  // Function to update player score display
+  function updatePlayerScoreRow() {
+    // Clear current display
+    playerScoreRow.innerHTML = '';
+    
+    // Get checked players
+    const checkedPlayers = getEnabledPlayers();
+    
+    // Initialize scores for new players
+    checkedPlayers.forEach(playerName => {
+      if (!playerScores[playerName]) {
+        playerScores[playerName] = 0;
+      }
+    });
+    
+    // Create score items for each player
+    checkedPlayers.forEach(playerName => {
+      const scoreItem = document.createElement('div');
+      scoreItem.className = 'player-score-item';
+      scoreItem.innerHTML = `
+        <div class="player-name">${playerName}</div>
+        <div class="player-points" id="score-${playerName.replace(/\s+/g, '-')}">${playerScores[playerName]}</div>
+      `;
+      
+      // Add click event to increase score
+      scoreItem.addEventListener('click', () => {
+        increasePlayerScore(playerName);
+      });
+      
+      playerScoreRow.appendChild(scoreItem);
+    });
+  }
+  
+  // Function to increase a player's score
+  function increasePlayerScore(playerName) {
+    // Increase the score
+    playerScores[playerName]++;
+    
+    // Update display
+    const scoreElement = document.getElementById(`score-${playerName.replace(/\s+/g, '-')}`);
+    if (scoreElement) {
+      scoreElement.textContent = playerScores[playerName];
+      
+      // Add animation effect
+      scoreElement.style.transform = 'scale(1.3)';
+      setTimeout(() => {
+        scoreElement.style.transform = 'scale(1)';
+      }, 200);
+    }
+    
+    // Also update the players list if it exists
+    updatePlayersList();
+  }
+  
+  // Function to update players list
+  function updatePlayersList() {
+    if (!playersList) return;
+    
     playersList.innerHTML = '';
-    players.forEach((player, index) => {
+    
+    // Get all checked players
+    const checkedPlayers = getEnabledPlayers();
+    
+    // Create player elements with scores
+    checkedPlayers.forEach(playerName => {
       const playerDiv = document.createElement('div');
       playerDiv.className = 'player';
       playerDiv.innerHTML = `
-        <h3>${player.name}</h3>
-        <div class="player-score" id="score-${index}">${player.score}</div>
-        <div class="score-buttons">
-          <button onclick="updateScore(${index}, 1)">+</button>
-          <button onclick="updateScore(${index}, -1)">-</button>
-        </div>
+        <h3>${playerName}</h3>
+        <div class="player-score">${playerScores[playerName] || 0}</div>
       `;
+      
       playersList.appendChild(playerDiv);
     });
   }
-
-  window.updateScore = (index, delta) => {
-    players[index].score += delta;
-    document.getElementById(`score-${index}`).innerText = players[index].score;
-  };
-
-  resetGameButton.addEventListener('click', () => {
-    players.forEach(player => player.score = 0);
-    renderPlayers();
+  
+  // Listen for player checkbox changes
+  document.querySelector('.player-entries').addEventListener('change', event => {
+    if (event.target.classList.contains('player-checkbox')) {
+      updatePlayerScoreRow();
+      updatePlayersList();
+    }
   });
-
-  renderPlayers();
+  
+  // Handle new player additions
+  const playerForm = document.getElementById('player-form');
+  if (playerForm) {
+    playerForm.addEventListener('submit', () => {
+      // Use setTimeout to allow DOM to update first
+      setTimeout(() => {
+        updatePlayerScoreRow();
+        updatePlayersList();
+      }, 0);
+    });
+  }
+  
+  // Reset scores button
+  resetScoresButton.addEventListener('click', () => {
+    // Reset all scores to zero
+    Object.keys(playerScores).forEach(playerName => {
+      playerScores[playerName] = 0;
+    });
+    
+    // Update displays
+    updatePlayerScoreRow();
+    updatePlayersList();
+  });
+  
+  // Reset game button (also resets bar-raiser)
+  resetGameButton.addEventListener('click', () => {
+    // Reset all scores to zero
+    Object.keys(playerScores).forEach(playerName => {
+      playerScores[playerName] = 0;
+    });
+    
+    // Reset bar-raiser selection
+    currentIndex = -1;
+    
+    // Update displays
+    updatePlayerScoreRow();
+    updatePlayersList();
+  });
+  
+  // Initial rendering
+  updatePlayerScoreRow();
+  updatePlayersList();
 });
