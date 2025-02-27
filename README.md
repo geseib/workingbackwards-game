@@ -57,10 +57,22 @@ git clone https://github.com/geseib/workingbackwards-game.git
 
 This project is open-source and available under the MIT License.
 
+## The Book Series
+
+The game uses concepts from the acclaimed "101 Things I Learned in [Subject] School" series by Matthew Frederick and various subject matter experts. Each book in this series presents 101 concise lessons that capture essential principles, techniques, and wisdom from different disciplines.
+
+These books are perfect for this game because they:
+- Distill complex ideas into accessible, bite-sized lessons
+- Cover a wide range of disciplines (Architecture, Engineering, Film School, Law School, etc.)
+- Include visual illustrations that help convey concepts
+- Present ideas that can be creatively applied across different fields
+
+You can [purchase the books on Amazon](https://www.amazon.com/dp/B08P5ZQ8LD?binding=kindle_edition&ref=dbs_m_mng_rwt_sft_tkin_thcv&qid=1740654942&sr=8-1) or at your local bookstore.
+
 ## Acknowledgments
 
 - Inspired by Amazon's "Working Backwards" principle
-- Uses the "101 Things I Learned in [Subject] School" book series concept
+- Based on the "101 Things I Learned in [Subject] School" book series by Matthew Frederick
 - Built with modern web technologies
 
 ---
