@@ -407,12 +407,16 @@ input, button {
   box-sizing: border-box;
 }
 button {
-  width: 80px;
+  width: auto;
+  min-width: 80px;
   height: 40px;
   font-weight: bold;
   transition: 0.2s;
   cursor: pointer;
-    margin: 0px 5px;
+  margin: 0px 5px;
+  line-height: 20px;
+  padding: 5px 15px;
+  box-sizing: border-box;
 }
 button:hover{
   color: white;
@@ -473,6 +477,12 @@ svg {
 .sound-toggle-wrapper button {
   width: 140px;
   border: 1px solid white;
+  padding: 8px 10px;
+  height: auto;
+  min-height: 40px;
+  line-height: 24px;
+  display: inline-block;
+  vertical-align: middle;
 }
 .sound-toggle-wrapper button:active {
   width: 140px;
@@ -641,12 +651,17 @@ form {
 #toggle-rules-btn {
   background-color: darkorange;
   color: white;
-  padding: 10px 20px;
+  padding: 8px 20px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
   margin-bottom: 10px;
+  height: auto;
+  min-height: 40px;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 24px;
 }
 
 #toggle-rules-btn:hover {
@@ -714,7 +729,7 @@ form {
 
 #reset-game, #reset-scores {
   margin-top: 10px;
-  padding: 10px 20px;
+  padding: 8px 15px;
   font-size: 16px;
   background-color: darkorange;
   color: black;
@@ -726,6 +741,9 @@ form {
   width: 150px;
   margin-left: auto;
   margin-right: auto;
+  height: auto;
+  min-height: 40px;
+  line-height: 24px;
 }
 
 #reset-game:hover, #reset-scores:hover {
