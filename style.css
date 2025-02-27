@@ -454,13 +454,45 @@ label {
   border-bottom: 1px solid grey;
 }
 
-svg {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  z-index: 5;
+.logo-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.osmo-icon-svg {
+  position: relative;
+  z-index: 10;
   mix-blend-mode: soft-light;
   filter: contrast(420%) brightness(350%);
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  width: 100px;
+  height: 100px;
+}
+
+.osmo-icon-svg:hover {
+  transform: scale(1.05);
+  filter: contrast(450%) brightness(400%);
+}
+
+.click-hint {
+  color: #fff;
+  background-color: rgba(255, 165, 0, 0.8);
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 14px;
+  margin-top: 5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.8; }
+}
 /*     background: 
 	linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
 	url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.87' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
@@ -682,37 +714,50 @@ form {
 }
 
 .rules {
-  background-color: lightSkyBlue;  /* Light Sky Blue Background */
-  border: 2px solid #ccc;
+  background-color: #2c4f7c;      /* Darker blue background for better contrast */
+  border: 2px solid #1a365d;
   border-radius: 10px;
   padding: 0;                     /* No padding when collapsed */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   max-height: 0;                  /* Collapsed by default */
   overflow: hidden;               /* Hide content when collapsed */
   transition: max-height 0.5s ease-out, padding 0.3s ease-out;
+  color: white;                   /* White text for better contrast */
 }
 
 .rules.open {
   max-height: 1000px;             /* Adjust this if the content is very long */
-  padding: 20px;                  /* Add padding when open */
+  padding: 25px;                  /* Increased padding when open */
   transition: max-height 0.5s ease-in, padding 0.3s ease-in;
 }
 
 .rules h2 {
   margin-top: 0;                  /* Remove top margin from the main heading */
-  color: #333;
+  color: #ffd700;                 /* Gold color for headings */
   padding-top: 5px;               /* Add some space inside instead */
+  font-size: 24px;                /* Larger font for main heading */
+  margin-bottom: 15px;            /* Add space below the heading */
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
 }
 
 .rules h3 {
-  margin-top: 15px;               /* Increase space between sections */
-  color: #333;
+  margin-top: 20px;               /* Increase space between sections */
+  margin-bottom: 10px;            /* Add space below subheadings */
+  color: #ffd700;                 /* Gold color for headings */
+  font-size: 20px;                /* Larger font for subheadings */
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
 }
 
 .rules p {
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 10px;
+  font-size: 18px;                /* Larger font for better readability */
+  line-height: 1.7;               /* Increased line height for readability */
+  margin-bottom: 15px;            /* More space between paragraphs */
+  text-align: left;               /* Left-aligned text for better readability */
+}
+
+.rules strong {
+  color: #ffa500;                 /* Orange color for emphasis */
+  font-weight: bold;
 }
 
 #players-list {
