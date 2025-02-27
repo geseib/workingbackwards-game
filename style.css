@@ -534,14 +534,16 @@ button[dataSoundOn='off'] {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  text-align: left;
 }
 .book-entry label {
-
   font-size: 18px;
 }
 .book-entry input[type="checkbox"] {
   width: 20px;
- 
+  margin-right: 10px;
 }
   
 /* Styles for the book section */
@@ -571,14 +573,16 @@ button[dataSoundOn='off'] {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  text-align: left;
 }
 .player-entry label {
-
   font-size: 18px;
 }
 .player-entry input[type="checkbox"] {
   width: 20px;
-   
+  margin-right: 10px;
 }
 
 .content-container2 {
@@ -601,12 +605,21 @@ button[dataSoundOn='off'] {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.book-entries, 
+.player-entries {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
 .add-book,
 .add-player {
   display: flex;
   gap: 10px;
   margin-top: 10px;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 20px; /* Match exactly with the book/player entries */
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .add-book input,
