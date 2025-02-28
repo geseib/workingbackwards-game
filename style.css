@@ -785,8 +785,16 @@ form {
   margin: 0 5px;
 }
 
-#reset-game, #reset-scores {
+.settings-button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 10px;
+  position: relative;
+}
+
+#reset-game, #reset-scores {
+  margin: 10px 5px;
   padding: 8px 15px;
   font-size: 16px;
   background-color: darkorange;
@@ -795,13 +803,36 @@ form {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.2s;
-  display: block;
+  display: inline-block;
   width: 150px;
-  margin-left: auto;
-  margin-right: auto;
   height: auto;
   min-height: 40px;
   line-height: 24px;
+}
+
+.status-indicator {
+  font-size: 14px;
+  padding: 4px 8px;
+  margin-left: 10px;
+  border-radius: 15px;
+  white-space: nowrap;
+  display: inline-block;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.status-indicator.active {
+  opacity: 1;
+}
+
+.status-indicator.clean-slate {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status-indicator.in-progress {
+  background-color: #2196F3;
+  color: white;
 }
 
 #reset-game:hover, #reset-scores:hover {

@@ -309,8 +309,14 @@
 <!-- Game controls -->
 <section class="settings">
   <h3>Game Controls</h3>
-  <button id="reset-scores">Reset Scores</button>
-  <button id="reset-game">Reset Game</button>
+  <div class="settings-button-container">
+    <button id="reset-scores">Reset Scores</button>
+    <span id="scores-status" class="status-indicator clean-slate active">Clean Slate</span>
+  </div>
+  <div class="settings-button-container">
+    <button id="reset-game">Reset Game</button>
+    <span id="game-status" class="status-indicator clean-slate active">Clean Slate</span>
+  </div>
 </section>
 
       </div>

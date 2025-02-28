@@ -434,8 +434,59 @@ function displayBookTitle() {
   setupBook(currentPos, splitBookTitle(bookAlphabet), target);
 }
 
+// Function to update game state indicators
+function updateGameStateIndicators(state) {
+  const gameStatus = document.getElementById('game-status');
+  const scoresStatus = document.getElementById('scores-status');
+  
+  if (!gameStatus || !scoresStatus) return;
+  
+  if (state === 'clean-slate') {
+    // Update game status
+    gameStatus.className = 'status-indicator clean-slate active';
+    gameStatus.textContent = 'Clean Slate';
+    
+    // Update scores status
+    scoresStatus.className = 'status-indicator clean-slate active';
+    scoresStatus.textContent = 'Clean Slate';
+    
+    // Set default book display
+    resetBookDisplay();
+    
+    // Reset bar-raiser display
+    if (playersColumn) {
+      playersColumn.innerHTML = '<h2>Bar-raiser: play to find out who</h2>';
+    }
+  } else if (state === 'in-progress') {
+    // Update game status
+    gameStatus.className = 'status-indicator in-progress active';
+    gameStatus.textContent = 'Game in Progress';
+  } else if (state === 'scores-reset') {
+    // Only update scores status
+    scoresStatus.className = 'status-indicator clean-slate active';
+    scoresStatus.textContent = 'Clean Slate';
+  } else if (state === 'scores-active') {
+    // Only update scores status when points exist
+    scoresStatus.className = 'status-indicator in-progress active';
+    scoresStatus.textContent = 'Points Recorded';
+  }
+}
+
+// Function to reset book display to "Book"
+function resetBookDisplay() {
+  const defaultBookDisplay = ['B', 'o', 'o', 'k'];
+  setupBook(
+    [...new Array(4).fill(' ')],
+    splitBookTitle(bookAlphabet),
+    defaultBookDisplay
+  );
+}
+
 // Listen for clicks on the center logo to trigger the game turn
 document.addEventListener("DOMContentLoaded", function() {
+  // Initialize game state indicators
+  setTimeout(() => updateGameStateIndicators('clean-slate'), 500);
+  
   // Get the center logo SVG element
   const centerLogo = document.querySelector('.osmo-icon-svg');
   
@@ -525,6 +576,9 @@ function updateBarRaiser() {
   
   // Update the player score row to highlight the bar-raiser
   updatePlayerHighlights();
+  
+  // Update game state indicators
+  updateGameStateIndicators('in-progress');
 }
 
 // Function to update player highlights based on bar-raiser status
@@ -767,6 +821,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Also update the players list if it exists
     updatePlayersList();
+    
+    // Update score status to indicate points are recorded
+    updateGameStateIndicators('scores-active');
   }
   
   // Function to update players list
@@ -821,6 +878,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update displays
     updatePlayerScoreRow();
     updatePlayersList();
+    
+    // Update the status indicator
+    updateGameStateIndicators('scores-reset');
   });
   
   // Reset game button (also resets bar-raiser)
@@ -837,6 +897,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update displays
     updatePlayerScoreRow();
     updatePlayersList();
+    
+    // Reset all game indicators to clean slate
+    updateGameStateIndicators('clean-slate');
   });
   
   // Initial call to updatePlayerHighlights to set up correct styling
