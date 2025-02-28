@@ -475,6 +475,29 @@ function updateGameStateIndicators(state) {
 // Function to reset book display to "Book"
 function resetBookDisplay() {
   const defaultBookDisplay = ['B', 'o', 'o', 'k'];
+  
+  // Build the flaps dynamically:
+  const container = document.querySelector(".split-flap-wrapper-book");
+  container.innerHTML = ""; // Clear previous content
+  
+  // Create exactly 4 flaps for the word "Book"
+  for (let i = 0; i < 4; i++) {
+    const flap = document.createElement("div");
+    flap.className = "flap flex-center-all";
+    flap.innerHTML = `
+      <div class="top">
+        <div class="top-flap-queued"><span>_</span></div>
+        <div class="top-flap-visible"><span> </span></div>
+      </div>
+      <div class="bottom">
+        <div class="bottom-flap-queued"><span>_</span></div>
+        <div class="bottom-flap-visible"><span> </span></div>
+      </div>
+    `;
+    container.appendChild(flap);
+  }
+  
+  // Animate the flaps to display "Book"
   setupBook(
     [...new Array(4).fill(' ')],
     splitBookTitle(bookAlphabet),
