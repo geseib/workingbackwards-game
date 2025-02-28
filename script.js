@@ -538,10 +538,6 @@ function updatePlayerHighlights() {
     
     if (playerName === currentBarRaiser) {
       item.classList.add('bar-raiser');
-      
-      // Remove the click event listener from the bar-raiser
-      const oldItem = item.cloneNode(true);
-      item.parentNode.replaceChild(oldItem, item);
     } else {
       item.classList.remove('bar-raiser');
     }
@@ -749,6 +745,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Function to increase a player's score
   function increasePlayerScore(playerName) {
+    // Don't allow bar-raiser to score
+    if (playerName === currentBarRaiser) {
+      return;
+    }
+    
     // Increase the score
     playerScores[playerName]++;
     
