@@ -1019,6 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetGameButton = document.getElementById('reset-game');
   const resetScoresButton = document.getElementById('reset-scores');
   const editScoresButton = document.getElementById('edit-scores-btn');
+  const clearScoresButton = document.getElementById('clear-scores-btn');
+  // The clear button sits next to the +/- controls, so it asks twice.
+  let clearArmed = false;
 
   // Function to update player score display
   function updatePlayerScoreRow() {
@@ -1105,6 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Manual edits stand on their own — they don't disturb who holds the
   // round's point, so it can still be moved once the editor is closed.
   function adjustScore(playerName, delta) {
+    setClearArmed(false);
     addPoints(playerName, delta);
     updatePlayerScoreRow();
     updatePlayersList();
@@ -1163,12 +1167,34 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGameStateIndicators(anyPoints ? 'scores-active' : 'scores-reset');
   }
 
+  // Wipe the whole scoreboard. The round carries on — it just has no point
+  // on it any more.
+  function clearAllScores() {
+    Object.keys(playerScores).forEach(playerName => {
+      playerScores[playerName] = 0;
+    });
+    roundWinner = null;
+    spinWarningArmed = false;
+    updatePlayerScoreRow();
+    updatePlayersList();
+    updateGameStateIndicators('scores-reset');
+  }
+
+  function setClearArmed(next) {
+    clearArmed = next;
+    clearScoresButton.classList.toggle('armed', clearArmed);
+    clearScoresButton.title = clearArmed ? 'Click again to clear all scores' : 'Clear all scores';
+    clearScoresButton.setAttribute('aria-label', clearScoresButton.title);
+  }
+
   function setEditing(next) {
     editing = next;
     editScoresButton.classList.toggle('active', editing);
     editScoresButton.setAttribute('aria-pressed', String(editing));
     editScoresButton.title = editing ? 'Lock in scores' : 'Edit scores';
     editScoresButton.setAttribute('aria-label', editScoresButton.title);
+    clearScoresButton.hidden = !editing;
+    setClearArmed(false);
     updatePlayerScoreRow();
     setScoreMessage(
       editing
@@ -1179,6 +1205,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   editScoresButton.addEventListener('click', () => setEditing(!editing));
+
+  clearScoresButton.addEventListener('click', () => {
+    if (!clearArmed) {
+      setClearArmed(true);
+      setScoreMessage('Clear every score? Click the circle again to confirm.', 'warning');
+      return;
+    }
+    setClearArmed(false);
+    clearAllScores();
+    setScoreMessage('All scores cleared.', 'info');
+  });
 
   // Hooks the spin controller uses to settle the board before a new round.
   renderScoreRow = updatePlayerScoreRow;
@@ -1237,32 +1274,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  // Reset scores button
+  // Reset scores button — the scoreboard only; the rotation carries on
   resetScoresButton.addEventListener('click', () => {
-    // Reset all scores to zero
-    Object.keys(playerScores).forEach(playerName => {
-      playerScores[playerName] = 0;
-    });
-
-    // The round's point went with them, but the round itself carries on
-    roundWinner = null;
-    spinWarningArmed = false;
-
-    // Update displays
-    updatePlayerScoreRow();
-    updatePlayersList();
-
-    // Update the status indicator
-    updateGameStateIndicators('scores-reset');
+    clearAllScores();
     setScoreMessage('Scores cleared.', 'info');
   });
 
-  // Reset game button (also resets bar-raiser)
+  // Reset game button — the scoreboard plus the round itself
   resetGameButton.addEventListener('click', () => {
-    // Reset all scores to zero
-    Object.keys(playerScores).forEach(playerName => {
-      playerScores[playerName] = 0;
-    });
+    if (editing) setEditing(false);
+    clearAllScores();
 
     // Reset bar-raiser selection
     currentIndex = -1;
@@ -1270,9 +1291,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // No round in play, so nothing is waiting to be scored
     roundActive = false;
-    roundWinner = null;
-    spinWarningArmed = false;
-    if (editing) setEditing(false);
 
     // Update displays
     updatePlayerScoreRow();

@@ -1023,6 +1023,14 @@ form {
   min-width: 0;
 }
 
+.setting-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(51, 51, 51, 0.55);
+  text-align: left;
+}
+
 .settings h3,
 .sound-toggle-wrapper h3 {
   font-family: var(--font-display);
@@ -1105,7 +1113,8 @@ form {
   width: 100%;
 }
 
-.edit-scores-btn {
+.edit-scores-btn,
+.clear-scores-btn {
   flex: 0 0 auto;
   width: 32px;
   min-width: 32px;
@@ -1136,6 +1145,32 @@ form {
   border-color: var(--color-primary);
   color: white;
   opacity: 1;
+}
+
+/* Clear-all lives inside the editor and asks twice before wiping */
+.clear-scores-btn[hidden] {
+  display: none;
+}
+
+.clear-scores-btn:hover {
+  background-color: rgba(214, 69, 65, 0.18);
+  border-color: #d64541;
+  color: #ff8a86;
+  opacity: 1;
+}
+
+/* Pulse the ring rather than the button — the confirm target must not move */
+@keyframes armed-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 69, 65, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(214, 69, 65, 0); }
+}
+
+.clear-scores-btn.armed {
+  background-color: #d64541;
+  border-color: #d64541;
+  color: white;
+  opacity: 1;
+  animation: armed-ring 1.2s infinite;
 }
 
 /* Message line under the scores: what just happened, what to do next */
