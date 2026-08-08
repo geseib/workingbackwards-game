@@ -33,6 +33,12 @@
       <div class="player-score-row" id="player-score-row">
         <!-- Player scores will be displayed here -->
       </div>
+      <button type="button" id="clear-scores-btn" class="clear-scores-btn" title="Clear all scores" aria-label="Clear all scores" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+      </button>
       <button type="button" id="edit-scores-btn" class="edit-scores-btn" title="Edit scores" aria-label="Edit scores" aria-pressed="false">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9"></path>
@@ -136,6 +142,7 @@
     </div>
     <div class="content-box" id="book-box">
     <div class="split-flap-wrapper-book flex-center-all">
+      <div class="book-flap-row">
             <div class="flap flex-center-all">
     <div class="top">
       <div class="top-flap-queued">
@@ -240,12 +247,11 @@
         </span>
       </div>
     </div>
-  </div>
- </div>
- </div>
-</div>
-</div>
-   </div>
+  </div><!-- /.flap -->
+      </div><!-- /.book-flap-row -->
+    </div><!-- /.split-flap-wrapper-book -->
+    </div><!-- /#book-box -->
+
    <div class="rules-container">
     <button id="toggle-rules-btn">Show Rules</button>
     
@@ -276,7 +282,7 @@
         3. Once everyone is ready, they share their answers with the Bar Raiser. The Bar Raiser chooses the best response.
       </p>
       <p>
-        <strong>Scoring:</strong> Exactly one point is awarded per round. Click the winner's name to give them the point. Changed your mind? Click a different player to move the point, or click the winner again to take it back—the point stays movable until the next spin locks it in. If you spin before anyone has scored, you'll get a warning; spin again to skip the round's point. Need to fix a total by hand? Click the pencil icon to show <strong>−</strong> and <strong>+</strong> next to each player, then press the pencil again (or spin) to lock the scores in.
+        <strong>Scoring:</strong> Exactly one point is awarded per round. Click the winner's name to give them the point. Changed your mind? Click a different player to move the point, or click the winner again to take it back—the point stays movable until the next spin locks it in. If you spin before anyone has scored, you'll get a warning; spin again to skip the round's point. Need to fix a total by hand? Click the pencil icon to show <strong>−</strong> and <strong>+</strong> next to each player, plus a circular arrow that wipes every score back to zero. Press the pencil again (or spin) to lock the scores in.
       </p>
       <p>
         4. Repeat! The role of Bar Raiser rotates in a round-robin fashion, with each player taking turns. Books and lessons will continue to be picked randomly from the selected list.
@@ -286,7 +292,9 @@
       </p>
     </div>
   </div>
-  </section> 
+  </section>
+</div><!-- /.parallax -->
+
  <section>
   <div class="content-container2">
     <!-- Books Column -->
@@ -313,19 +321,21 @@
       <div class="setting-entries">
         <div class='sound-toggle-wrapper'>  
           <h3>Sound</h3>
-          <button dataSoundOn='off' class='turn-sound-on-btn' onClick={downloadSound(event)}>Sound off</button>
+          <button type="button" dataSoundOn='off' class='turn-sound-on-btn' onclick="downloadSound(event)">Sound off</button>
         </div>
 <!-- Game controls -->
 <section class="settings">
   <h3>Game Controls</h3>
   <div class="settings-button-container">
-    <button id="reset-scores">Reset Scores</button>
+    <button id="reset-scores" title="Set every score back to zero. The Bar-raiser and the current round carry on.">Reset Scores</button>
     <span id="scores-status" class="status-indicator clean-slate active">Clean Slate</span>
   </div>
+  <p class="setting-hint">Zeroes the scoreboard only — the rotation keeps going.</p>
   <div class="settings-button-container">
-    <button id="reset-game">Reset Game</button>
+    <button id="reset-game" title="Start over: zeroes the scores, clears the Bar-raiser and resets the board.">Reset Game</button>
     <span id="game-status" class="status-indicator clean-slate active">Clean Slate</span>
   </div>
+  <p class="setting-hint">Full restart — also clears the Bar-raiser and the board.</p>
 </section>
 
       </div>

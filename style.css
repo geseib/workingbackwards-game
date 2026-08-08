@@ -19,18 +19,22 @@
   --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* --color-*, --size-font and the padding scale come from the Osmo stylesheet
+   hosted on slater.app. Every use of one carries a fallback so a slow or
+   failed CDN fetch — the normal state of affairs on a phone with one bar —
+   degrades to a readable page instead of black text on a black background. */
 body {
-  background-color: var(--color-neutral-900);
-  color: var(--color-light);
+  background-color: var(--color-neutral-900, #111111);
+  color: var(--color-light, #dddddd);
   font-family: var(--font-primary);
-  font-size: var(--size-font);
+  font-size: var(--size-font, 16px);
   margin: 0;
   padding: 0;
   line-height: 1.6;
 }
 
 .cloneable {
-  padding: var(--container-padding);
+  padding: var(--container-padding, 1.5rem);
   justify-content: center;
   align-items: center;
   min-height: 100vh;
@@ -54,7 +58,7 @@ form {
 
 .parallax__header {
   z-index: 2;
-  padding: var(--section-padding) var(--container-padding);
+  padding: var(--section-padding, 4rem) var(--container-padding, 1.5rem);
   justify-content: center;
   align-items: center;
   min-height: 100svh;
@@ -69,7 +73,7 @@ form {
 }
 
 .parallax__content {
-  padding: var(--section-padding) var(--container-padding);
+  padding: var(--section-padding, 4rem) var(--container-padding, 1.5rem);
   justify-content: center;
   align-items: center;
   min-height: 100svh;
@@ -149,7 +153,7 @@ form {
 
 .parallax__black-line-overflow {
   z-index: 20;
-  background-color: var(--color-black);
+  background-color: var(--color-black, #000000);
   width: 100%;
   height: 2px;
   position: absolute;
@@ -165,7 +169,8 @@ form {
   margin-bottom: .1em;
   margin-right: .075em;
   font-family: PP Neue Corp Wide, sans-serif;
-  font-size: 7vw;
+  /* 7vw alone collapses to ~26px on a phone; clamp keeps the hero a hero. */
+  font-size: clamp(2.4rem, 7vw, 9rem);
   font-weight: 600;
   line-height: 1;
   position: relative;
@@ -174,7 +179,7 @@ form {
 
 .parallax__radial-gradient {
   z-index: 10;
-  background-image: radial-gradient(circle farthest-corner at 50% 50%, transparent, var(--color-black));
+  background-image: radial-gradient(circle farthest-corner at 50% 50%, transparent, var(--color-black, #000000));
   opacity: .2;
   pointer-events: none;
   mix-blend-mode: multiply;
@@ -208,21 +213,27 @@ form {
   top: -20%;
 }
 
+/* The split-flap boards live in these. The two frames are deliberately the
+   same size, so the height stays fixed here; fitBoard() in script.js scales
+   the board to whatever width the frame actually has, and only raises the
+   frame's min-height in the rare case a board is taller than the baseline. */
 .content-box {
-      flex: 1 1 calc (33.33% - 20px);
-      width: 500px;
-      height: 150px;
-      background-color: orange;
-      border: 2px solid #ccc;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 0 20px;
-      font-size: 1.5rem;
-      text-align: center;
-    }
+  width: min(500px, 100%);
+  max-width: 100%;
+  height: 150px;
+  background-color: orange;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  font-size: 1.5rem;
+  text-align: center;
+}
 
 @font-face {
   font-family: 'PP Neue Corp Wide';
@@ -258,6 +269,13 @@ form {
 
 html {
   width: 100%;
+  /* Belt and braces against a stray pixel of sideways scroll on phones.
+     `clip` (unlike `hidden`) does not turn the root into a scroll container,
+     so it leaves Lenis/ScrollTrigger alone. */
+  overflow-x: clip;
+  /* Stop iOS from inflating the split-flap type and breaking the board. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 body {
   padding: 30px;
@@ -307,11 +325,28 @@ body {
   overflow: hidden;
 }
 
+/* The book board stacks one or more rows of flaps: a long title wraps onto a
+   second or third row on narrow screens rather than shrinking to nothing. */
 .split-flap-wrapper-book {
    width: max-content;
    min-width: 0;
+   height: auto;
+   flex-direction: column;
+   gap: 10px;
    transform-origin: center center;
    transform: scale(0.30);
+}
+
+.book-flap-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 280px;
+}
+
+/* Rows are auto-height, so the flaps inside them need a concrete one. */
+.split-flap-wrapper-book .flap {
+  height: 280px;
 }
 
 .flap {
@@ -424,6 +459,7 @@ form {
 }
 input, button {
   width: 300px;
+  max-width: 100%;
   height: 40px;
   margin: 10px;
   margin-right: 0px;
@@ -536,33 +572,42 @@ label {
   50% { opacity: 1; transform: scale(1.05); }
   100% { opacity: 0.8; }
 }
-/*     background: 
-	linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
-	url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.87' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
- */
-}
 
+/* Sits inside the Settings card. (An orphaned "}" used to sit right here,
+   left behind by a deleted rule; it swallowed the selector below, so this
+   whole block — including its old position:absolute — never applied.) */
 .sound-toggle-wrapper {
-  position: absolute;
-  top: 70px;
-  right: 50px;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.sound-toggle-wrapper h3 {
+  margin-top: 0;
 }
 .sound-toggle-wrapper button {
-  width: 140px;
-  border: 1px solid white;
-  padding: 8px 10px;
+  width: 100%;
+  max-width: 220px;
+  margin: 0;
+  padding: 12px 15px;
   height: auto;
-  min-height: 40px;
-  line-height: 24px;
-  display: inline-block;
-  vertical-align: middle;
+  min-height: 44px;
+  line-height: 20px;
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: var(--color-primary);
+  color: white;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+.sound-toggle-wrapper button:hover {
+  background-color: var(--color-primary-dark);
+  color: white;
 }
 .sound-toggle-wrapper button:active {
-  width: 140px;
-  border: 1px solid white;
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
 /* button[dataSoundOn='on'] {
@@ -766,7 +811,9 @@ button[dataSoundOn='off'] {
 
 .content-container2 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* min(280px, 100%) so a narrow phone gets one column instead of a column
+     that is wider than the screen. */
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   align-items: start;
   gap: 20px;
   padding: 20px;
@@ -875,8 +922,10 @@ form {
   font-family: var(--font-primary);
 }
 
+/* Generous ceiling: the same copy runs far taller in a phone-width column,
+   and anything past the limit was being silently cut off. */
 .rules.open {
-  max-height: 1200px;
+  max-height: 3200px;
   padding: 30px;
   transition: max-height 0.5s ease-in, padding 0.3s ease-in;
 }
@@ -962,6 +1011,7 @@ form {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 12px;
   position: relative;
@@ -970,6 +1020,15 @@ form {
 
 .settings-button-container button {
   flex: 1 1 auto;
+  min-width: 0;
+}
+
+.setting-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(51, 51, 51, 0.55);
+  text-align: left;
 }
 
 .settings h3,
@@ -1054,7 +1113,8 @@ form {
   width: 100%;
 }
 
-.edit-scores-btn {
+.edit-scores-btn,
+.clear-scores-btn {
   flex: 0 0 auto;
   width: 32px;
   min-width: 32px;
@@ -1085,6 +1145,32 @@ form {
   border-color: var(--color-primary);
   color: white;
   opacity: 1;
+}
+
+/* Clear-all lives inside the editor and asks twice before wiping */
+.clear-scores-btn[hidden] {
+  display: none;
+}
+
+.clear-scores-btn:hover {
+  background-color: rgba(214, 69, 65, 0.18);
+  border-color: #d64541;
+  color: #ff8a86;
+  opacity: 1;
+}
+
+/* Pulse the ring rather than the button — the confirm target must not move */
+@keyframes armed-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 69, 65, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(214, 69, 65, 0); }
+}
+
+.clear-scores-btn.armed {
+  background-color: #d64541;
+  border-color: #d64541;
+  color: white;
+  opacity: 1;
+  animation: armed-ring 1.2s infinite;
 }
 
 /* Message line under the scores: what just happened, what to do next */
@@ -1298,4 +1384,146 @@ form {
   font-family: var(--font-primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease;
+}
+
+/* ---------------------------------------------------------------------------
+   Touch input
+   Hover is the only way to reach some controls on a mouse, but a phone has no
+   hover at all — and the hover state it does synthesise sticks after a tap.
+   --------------------------------------------------------------------------- */
+@media (hover: none) {
+  /* Remove buttons are hover-revealed on desktop; on touch they'd be invisible
+     and unreachable, so show them permanently. */
+  .entry-remove {
+    opacity: 1;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 22px;
+    color: rgba(51, 51, 51, 0.45);
+  }
+
+  /* Lift-on-hover reads as a stuck element after a tap. */
+  .player-score-item:hover,
+  .content-box2:hover,
+  #toggle-rules-btn:hover,
+  #reset-game:hover,
+  #reset-scores:hover,
+  .osmo-icon-svg:hover {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive layout
+   The split-flap boards size themselves from the width actually available
+   (see fitBoard() in script.js), so these rules only have to keep the page
+   chrome — padding, type, spacing, touch targets — comfortable as it narrows.
+   --------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  body {
+    padding: 24px 18px;
+  }
+
+  .content-container2 {
+    padding: 16px 0;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 16px 12px;
+  }
+
+  .content-box2 {
+    padding: 20px 16px;
+  }
+
+  .content-box2 h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .players-column h2 {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  /* Score chips: tighter, and they wrap to as many rows as they need. */
+  .player-score-row {
+    gap: 10px;
+    margin: 12px 0 16px;
+    padding-top: 10px;
+  }
+
+  .score-panel .player-score-row {
+    margin-bottom: 10px;
+  }
+
+  .player-score-item {
+    padding: 9px 14px;
+  }
+
+  .player-score-row.editing .player-score-item {
+    padding: 9px 8px;
+  }
+
+  .player-score-item .player-name {
+    font-size: 15px;
+    margin-right: 8px;
+  }
+
+  .player-score-item .player-points {
+    width: 28px;
+    height: 28px;
+  }
+
+  .score-message {
+    font-size: 13px;
+  }
+
+  .logo-container {
+    margin: 6px 0;
+  }
+
+  .osmo-icon-svg {
+    width: 78px;
+    height: 78px;
+  }
+
+  .rules-container {
+    margin: 24px auto;
+  }
+
+  .rules.open {
+    padding: 22px 18px;
+  }
+
+  .rules h2 {
+    font-size: 22px;
+  }
+
+  .rules h3 {
+    font-size: 18px;
+  }
+
+  .rules p {
+    font-size: 15px;
+  }
+
+  /* Let the reset buttons share a row with their status pill, then wrap. */
+  #reset-game,
+  #reset-scores {
+    width: auto;
+    flex: 1 1 130px;
+  }
+
+  .status-indicator {
+    margin-left: 0;
+  }
+
+  .sound-toggle-wrapper button {
+    max-width: none;
+  }
 }
