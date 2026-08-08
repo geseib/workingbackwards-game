@@ -517,31 +517,85 @@ function resetBookDisplay() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Round scoring
+// Exactly one point is up for grabs each round. It stays movable — between
+// players or back off the board entirely — until the next spin locks it in.
+// ---------------------------------------------------------------------------
+let roundActive = false;      // a spin has happened, so a point is in play
+let roundWinner = null;       // player currently holding this round's point
+let spinWarningArmed = false; // true once we've warned about spinning unscored
+
+// Assigned by the score manager once the DOM is ready.
+let renderScoreRow = () => {};
+let clearRoundPoint = () => {};
+let closeScoreEditor = () => {};
+
+function setScoreMessage(text, tone) {
+  const message = document.getElementById('score-message');
+  if (!message) return;
+  message.textContent = text || '';
+  message.className = text ? `score-message active ${tone || 'info'}` : 'score-message';
+}
+
+// Draw attention to the score row when a spin is blocked by the warning.
+function flashScoreRow() {
+  const row = document.getElementById('player-score-row');
+  if (!row) return;
+  row.classList.remove('needs-score');
+  void row.offsetWidth;
+  row.classList.add('needs-score');
+}
+
+// The single entry point for spinning, shared by the centre icon and the
+// "Click to Play" button.
+function requestSpin() {
+  // Spinning throws the round's point away, so warn before it happens.
+  if (roundActive && roundWinner === null && !spinWarningArmed) {
+    spinWarningArmed = true;
+    setScoreMessage(
+      "Hold on — nobody won this round yet. Click a player to award the point, or spin again to move on without scoring.",
+      'warning'
+    );
+    flashScoreRow();
+    return;
+  }
+
+  spinWarningArmed = false;
+  closeScoreEditor();
+  clearRoundPoint(); // last round's point (if any) is now locked in
+  roundActive = true;
+
+  updateBarRaiser();
+  numbersGo();
+  setTimeout(displayBookTitle, 100);
+
+  setScoreMessage(
+    "Click the winner to award this round's point. You can move it until the next spin.",
+    'info'
+  );
+}
+
 // Listen for clicks on the center logo to trigger the game turn
 document.addEventListener("DOMContentLoaded", function() {
   // Initialize game state indicators
   setTimeout(() => updateGameStateIndicators('clean-slate'), 500);
-  
-  // Get the center logo SVG element
-  const centerLogo = document.querySelector('.osmo-icon-svg');
-  
-  // Make sure it's visually clear that it's clickable
-  if (centerLogo) {
-    centerLogo.style.cursor = 'pointer';
-    
-    // Add click event listener to the logo only
-    centerLogo.addEventListener("click", function(e) {
-      // Update bar-raiser
-      updateBarRaiser();
-      
-      // Update the number and book displays
-      numbersGo();
-      setTimeout(displayBookTitle, 100);
-      
+
+  // Both the centre icon and the button below it spin the machine.
+  const spinTargets = [
+    document.querySelector('.osmo-icon-svg'),
+    document.getElementById('spin-btn')
+  ];
+
+  spinTargets.forEach(target => {
+    if (!target) return;
+    target.style.cursor = 'pointer';
+    target.addEventListener("click", function(e) {
+      requestSpin();
       // Prevent event from bubbling up
       e.stopPropagation();
     });
-  }
+  });
 });
 
 
@@ -591,21 +645,11 @@ function updateBarRaiser() {
   updateGameStateIndicators('in-progress');
 }
 
-// Function to update player highlights based on bar-raiser status
+// Function to update player highlights based on bar-raiser status.
+// Rebuilding the row keeps the crown, the round-winner badge and the score
+// controls in sync with whoever is currently the Bar-raiser.
 function updatePlayerHighlights() {
-  // Get all player score items
-  const playerScoreItems = document.querySelectorAll('.player-score-item');
-  
-  // Update each item's styling based on whether it's the bar-raiser
-  playerScoreItems.forEach(item => {
-    const playerName = item.querySelector('.player-name').textContent;
-    
-    if (playerName === currentBarRaiser) {
-      item.classList.add('bar-raiser');
-    } else {
-      item.classList.remove('bar-raiser');
-    }
-  });
+  renderScoreRow();
 }
 
 // Note: We'll call this function only when the center logo is clicked
@@ -834,12 +878,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const playerScores = {};
   // Live map of player name -> points element
   const scoreElements = {};
+  // True while the manual +/- editor is open
+  let editing = false;
 
   // Get DOM elements
   const playerScoreRow = document.getElementById('player-score-row');
   const playersList = document.getElementById('players-list');
   const resetGameButton = document.getElementById('reset-game');
   const resetScoresButton = document.getElementById('reset-scores');
+  const editScoresButton = document.getElementById('edit-scores-btn');
 
   // Function to update player score display
   function updatePlayerScoreRow() {
@@ -849,24 +896,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Get checked players
     const checkedPlayers = getEnabledPlayers();
-    
+
     // Initialize scores for new players
     checkedPlayers.forEach(playerName => {
-      if (!playerScores[playerName]) {
+      if (!(playerName in playerScores)) {
         playerScores[playerName] = 0;
       }
     });
-    
+
+    // The round's point can't sit on a player who has left the game.
+    if (roundWinner && !checkedPlayers.includes(roundWinner)) {
+      roundWinner = null;
+    }
+
+    playerScoreRow.classList.toggle('editing', editing);
+
     // Create score items for each player
     checkedPlayers.forEach(playerName => {
       const scoreItem = document.createElement('div');
       scoreItem.className = 'player-score-item';
-      
+
       // Check if this player is the bar-raiser
       if (playerName === currentBarRaiser) {
         scoreItem.classList.add('bar-raiser');
       }
-      
+
+      // …and whether they're holding this round's point
+      if (playerName === roundWinner) {
+        scoreItem.classList.add('round-winner');
+      }
+
       const nameEl = document.createElement('div');
       nameEl.className = 'player-name';
       nameEl.textContent = playerName;
@@ -876,48 +935,129 @@ document.addEventListener('DOMContentLoaded', () => {
       pointsEl.textContent = playerScores[playerName];
       scoreElements[playerName] = pointsEl;
 
-      scoreItem.append(nameEl, pointsEl);
-
-      // Only add click event for non-bar-raisers
-      if (playerName !== currentBarRaiser) {
-        scoreItem.addEventListener('click', () => {
-          increasePlayerScore(playerName);
-        });
+      if (editing) {
+        // Manual correction mode: nudge any total up or down.
+        scoreItem.append(
+          makeAdjustButton('−', `Remove a point from ${playerName}`, () => adjustScore(playerName, -1)),
+          nameEl,
+          pointsEl,
+          makeAdjustButton('+', `Add a point to ${playerName}`, () => adjustScore(playerName, 1))
+        );
+      } else {
+        scoreItem.append(nameEl, pointsEl);
+        scoreItem.addEventListener('click', () => toggleRoundPoint(playerName));
       }
-      
+
       playerScoreRow.appendChild(scoreItem);
     });
   }
-  
-  // Function to increase a player's score
-  function increasePlayerScore(playerName) {
-    // Don't allow bar-raiser to score
+
+  function makeAdjustButton(label, description, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'score-adjust';
+    button.textContent = label;
+    button.title = description;
+    button.setAttribute('aria-label', description);
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+
+  function addPoints(playerName, delta) {
+    playerScores[playerName] = Math.max(0, (playerScores[playerName] || 0) + delta);
+  }
+
+  // Manual edits stand on their own — they don't disturb who holds the
+  // round's point, so it can still be moved once the editor is closed.
+  function adjustScore(playerName, delta) {
+    addPoints(playerName, delta);
+    updatePlayerScoreRow();
+    updatePlayersList();
+    pulseScore(playerName);
+    refreshScoreStatus();
+  }
+
+  // Award, move, or take back the single point available this round.
+  function toggleRoundPoint(playerName) {
     if (playerName === currentBarRaiser) {
+      setScoreMessage(`${playerName} is the Bar-raiser this round and can't take the point.`, 'warning');
       return;
     }
-    
-    // Increase the score
-    playerScores[playerName]++;
-    
-    // Update display
-    const scoreElement = scoreElements[playerName];
-    if (scoreElement) {
-      scoreElement.textContent = playerScores[playerName];
-      
-      // Add animation effect
-      scoreElement.style.transform = 'scale(1.3)';
-      setTimeout(() => {
-        scoreElement.style.transform = 'scale(1)';
-      }, 200);
+
+    if (!roundActive) {
+      setScoreMessage('Spin first — click the machine to start a round.', 'warning');
+      return;
     }
-    
-    // Also update the players list if it exists
+
+    if (roundWinner === playerName) {
+      // Clicking the current winner takes the point back off the board.
+      addPoints(playerName, -1);
+      roundWinner = null;
+      setScoreMessage('Point taken back — pick a winner before the next spin.', 'warning');
+    } else {
+      if (roundWinner) {
+        addPoints(roundWinner, -1);
+      }
+      addPoints(playerName, 1);
+      roundWinner = playerName;
+      spinWarningArmed = false;
+      setScoreMessage(
+        `${playerName} takes this round. You can still move the point until the next spin.`,
+        'success'
+      );
+    }
+
+    updatePlayerScoreRow();
     updatePlayersList();
-    
-    // Update score status to indicate points are recorded
-    updateGameStateIndicators('scores-active');
+    pulseScore(playerName);
+    refreshScoreStatus();
   }
-  
+
+  // Little bounce on the score bubble that just changed.
+  function pulseScore(playerName) {
+    const scoreElement = scoreElements[playerName];
+    if (!scoreElement) return;
+    scoreElement.style.transform = 'scale(1.3)';
+    setTimeout(() => {
+      scoreElement.style.transform = 'scale(1)';
+    }, 200);
+  }
+
+  function refreshScoreStatus() {
+    const anyPoints = Object.values(playerScores).some(score => score > 0);
+    updateGameStateIndicators(anyPoints ? 'scores-active' : 'scores-reset');
+  }
+
+  function setEditing(next) {
+    editing = next;
+    editScoresButton.classList.toggle('active', editing);
+    editScoresButton.setAttribute('aria-pressed', String(editing));
+    editScoresButton.title = editing ? 'Lock in scores' : 'Edit scores';
+    editScoresButton.setAttribute('aria-label', editScoresButton.title);
+    updatePlayerScoreRow();
+    setScoreMessage(
+      editing
+        ? 'Editing scores — use − and + to fix any totals, then press the pencil again to lock them in.'
+        : 'Scores locked in.',
+      editing ? 'info' : 'success'
+    );
+  }
+
+  editScoresButton.addEventListener('click', () => setEditing(!editing));
+
+  // Hooks the spin controller uses to settle the board before a new round.
+  renderScoreRow = updatePlayerScoreRow;
+  closeScoreEditor = () => {
+    if (editing) setEditing(false);
+  };
+  clearRoundPoint = () => {
+    roundWinner = null;
+    updatePlayerScoreRow();
+  };
+
   // Function to update players list
   function updatePlayersList() {
     if (!playersList) return;
@@ -959,6 +1099,9 @@ document.addEventListener('DOMContentLoaded', () => {
         playersColumn.textContent = `Bar-raiser: ${to}`;
       }
     }
+    if (roundWinner === from) {
+      roundWinner = to;
+    }
   });
 
 
@@ -968,32 +1111,44 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.keys(playerScores).forEach(playerName => {
       playerScores[playerName] = 0;
     });
-    
+
+    // The round's point went with them, but the round itself carries on
+    roundWinner = null;
+    spinWarningArmed = false;
+
     // Update displays
     updatePlayerScoreRow();
     updatePlayersList();
-    
+
     // Update the status indicator
     updateGameStateIndicators('scores-reset');
+    setScoreMessage('Scores cleared.', 'info');
   });
-  
+
   // Reset game button (also resets bar-raiser)
   resetGameButton.addEventListener('click', () => {
     // Reset all scores to zero
     Object.keys(playerScores).forEach(playerName => {
       playerScores[playerName] = 0;
     });
-    
+
     // Reset bar-raiser selection
     currentIndex = -1;
     currentBarRaiser = '';
-    
+
+    // No round in play, so nothing is waiting to be scored
+    roundActive = false;
+    roundWinner = null;
+    spinWarningArmed = false;
+    if (editing) setEditing(false);
+
     // Update displays
     updatePlayerScoreRow();
     updatePlayersList();
-    
+
     // Reset all game indicators to clean slate
     updateGameStateIndicators('clean-slate');
+    setScoreMessage('', 'info');
   });
   
   // Initial call to updatePlayerHighlights to set up correct styling
