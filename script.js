@@ -285,6 +285,13 @@ setup([...new Array(3).fill("0")], SplitFlapCharacters, [
   "1"
 ]);
 
+// Size both boards to the viewport now that they have content, so the markup's
+// placeholder "101" / "Book" is already in proportion before the first spin.
+document.addEventListener("DOMContentLoaded", () => {
+  fitNumberBoard();
+  fitBookBoard();
+});
+
 // --- Book Title Functionality ---
 
 // Define an alphabet for the book display – include letters, numbers, punctuation, and space.
@@ -325,8 +332,9 @@ function pickRandomBook() {
 // It uses the container ".split-flap-wrapper-book" instead of ".split-flap-wrapper".
 function setupBook(currentPos, symbolOrder, target) {
   const bookFlapContainer = document.querySelector(".split-flap-wrapper-book");
-  // Loop over each flap (each character)
-  for (let [index, item] of [...bookFlapContainer.children].entries()) {
+  // Loop over each flap (each character). The flaps are grouped into rows, so
+  // query for them rather than walking the container's direct children.
+  for (let [index, item] of [...bookFlapContainer.querySelectorAll(".flap")].entries()) {
     let symbolCursor = symbolOrder.indexOf(currentPos[index]);
     if (symbolCursor === -1) symbolCursor = 0; // fallback
 
@@ -400,49 +408,194 @@ function setupBook(currentPos, symbolOrder, target) {
   }
 }
 
-// Scale the book display so long titles still fit inside the board.
-const BOOK_FLAP_WIDTH = 214; // 200px flap + margins + borders
-const BOOK_MAX_WIDTH = 460;
-function fitBookFlaps(container, count) {
-  const scale = Math.min(0.3, BOOK_MAX_WIDTH / (count * BOOK_FLAP_WIDTH));
-  container.style.transform = `scale(${scale})`;
+// ---------------------------------------------------------------------------
+// Sizing the split-flap boards
+//
+// A board is laid out at full size (a flap is 210px wide, 280px tall) and then
+// scaled down with a CSS transform. The scale used to be a hard-coded constant
+// tuned for a 500px-wide desktop board, so on a phone — where there may only be
+// ~260px to play with — the wider book titles ran off the edge of the screen.
+// Instead we measure what the board's frame actually offers and scale to that,
+// re-fitting whenever the viewport changes.
+// ---------------------------------------------------------------------------
+const FLAP_UNIT = 210;          // laid-out width of one flap, including margins
+const BOARD_INSET = 10;         // breathing room either side of the board
+const BOARD_INSET_Y = 6;        // ...and above/below it
+const NUMBER_MAX_SCALE = 0.45;  // never grow past the original desktop sizes
+const BOOK_MAX_SCALE = 0.3;
+const BOOK_MAX_ROWS = 3;
+const MIN_FLAP_DISPLAY = 30;    // px on screen; below this a title starts to
+                                // read as a smudge, so wrap it instead
+
+// How much horizontal room a board's frame gives us, in CSS pixels.
+function boardAvailableWidth(box) {
+  if (!box) return 320;
+  return Math.max(140, box.clientWidth - BOARD_INSET * 2);
 }
+
+// Scale a board to fit inside its frame.
+function fitBoard(container, maxScale) {
+  if (!container) return;
+  const box = container.parentElement;
+  if (!box) return;
+
+  // offsetWidth/Height report the laid-out size and ignore the transform, so
+  // these stay stable no matter what scale is currently applied.
+  const naturalWidth = container.offsetWidth || 1;
+  const naturalHeight = container.offsetHeight || 1;
+  const scale = Math.min(maxScale, boardAvailableWidth(box) / naturalWidth);
+
+  container.style.transform = `scale(${scale})`;
+  // The frame's height is the stylesheet's business — the two frames are meant
+  // to match. Only step in when a board would otherwise be cropped, which a
+  // title wrapped onto three rows can manage on a very short screen.
+  box.style.minHeight = `${Math.round(naturalHeight * scale) + BOARD_INSET_Y * 2}px`;
+}
+
+function fitNumberBoard() {
+  fitBoard(document.querySelector(".split-flap-wrapper"), NUMBER_MAX_SCALE);
+}
+
+function fitBookBoard() {
+  fitBoard(document.querySelector(".split-flap-wrapper-book"), BOOK_MAX_SCALE);
+}
+
+// Reduce a title to characters the board can actually flip to. A flap asked
+// for a symbol that isn't in the alphabet never finds it and spins forever, so
+// accents are folded onto their base letter ("Café" -> "Cafe") and anything
+// still unknown becomes a space.
+function sanitizeTitle(title) {
+  const folded = String(title).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return [...folded]
+    .map((ch) => (bookAlphabet.includes(ch) ? ch : " "))
+    .join("")
+    .trim() || "Book";
+}
+
+function chunkWord(word, size) {
+  const parts = [];
+  for (let i = 0; i < word.length; i += size) {
+    parts.push(word.slice(i, i + size));
+  }
+  return parts;
+}
+
+// Greedy word wrap. A word that is merely longer than the budget keeps its own
+// row — hyphenating "Architecture" across two rows of flaps looks like a fault,
+// not a design. Only a word more than twice the budget gets broken up.
+function wrapTitle(title, perRow) {
+  const rows = [];
+  let current = "";
+
+  title
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((word) => {
+      const parts = word.length > perRow * 2 ? chunkWord(word, perRow) : [word];
+      parts.forEach((part) => {
+        if (!current) {
+          current = part;
+        } else if (current.length + 1 + part.length <= perRow) {
+          current += ` ${part}`;
+        } else {
+          rows.push(current);
+          current = part;
+        }
+      });
+    });
+
+  if (current) rows.push(current);
+  return rows.length ? rows : ["Book"];
+}
+
+// Split a title into the rows of flaps that best use the width on offer.
+function bookRows(title) {
+  const available = boardAvailableWidth(document.getElementById("book-box"));
+  const perRow = Math.max(1, Math.floor(available / MIN_FLAP_DISPLAY));
+
+  let rows = wrapTitle(title, perRow);
+  if (rows.length > BOOK_MAX_ROWS) {
+    // Too tall — pack it into BOOK_MAX_ROWS rows and accept smaller flaps.
+    const dense = Math.ceil(title.length / BOOK_MAX_ROWS);
+    rows = wrapTitle(title, Math.max(perRow, dense));
+  }
+  return rows;
+}
+
+function makeFlap() {
+  const flap = document.createElement("div");
+  flap.className = "flap flex-center-all";
+  flap.innerHTML = `
+    <div class="top">
+      <div class="top-flap-queued"><span>_</span></div>
+      <div class="top-flap-visible"><span> </span></div>
+    </div>
+    <div class="bottom">
+      <div class="bottom-flap-queued"><span>_</span></div>
+      <div class="bottom-flap-visible"><span> </span></div>
+    </div>
+  `;
+  return flap;
+}
+
+// Build the flaps for the given rows and return the flat list of characters
+// they should land on (the space at a row break is dropped along with it).
+function buildBookFlaps(rows) {
+  const container = document.querySelector(".split-flap-wrapper-book");
+  container.innerHTML = "";
+
+  rows.forEach((text) => {
+    const row = document.createElement("div");
+    row.className = "book-flap-row";
+    [...text].forEach(() => row.appendChild(makeFlap()));
+    container.appendChild(row);
+  });
+
+  return [...rows.join("")];
+}
+
+// The title currently on the board, so a resize can re-wrap and redraw it.
+let currentBookTitle = "Book";
 
 // Function to build the book title display dynamically and animate it
 function displayBookTitle() {
-  const bookTitle = pickRandomBook();
-  // Split the title into an array of characters
-  const target = [...bookTitle];
-  // Create an initial array – here using a space (" ") for each flap
-  const currentPos = new Array(target.length).fill(" ");
-  
-  // Build the flaps dynamically based on the title length:
-  const container = document.querySelector(".split-flap-wrapper-book");
-  container.innerHTML = ""; // Clear previous content, if any
-
-  target.forEach(() => {
-    // Create a new flap element (structure similar to your number display)
-    const flap = document.createElement("div");
-    flap.className = "flap flex-center-all";
-    flap.innerHTML = `
-      <div class="top">
-        <div class="top-flap-queued"><span>_</span></div>
-        <div class="top-flap-visible"><span> </span></div>
-      </div>
-      <div class="bottom">
-        <div class="bottom-flap-queued"><span>_</span></div>
-        <div class="bottom-flap-visible"><span> </span></div>
-      </div>
-    `;
-    container.appendChild(flap);
-  });
-
-  fitBookFlaps(container, target.length);
+  currentBookTitle = sanitizeTitle(pickRandomBook());
+  const target = buildBookFlaps(bookRows(currentBookTitle));
+  fitBookBoard();
 
   // Animate the book title using the duplicate setup function.
   // (Using splitBookTitle() to ensure proper segmentation of the bookAlphabet.)
-  setupBook(currentPos, splitBookTitle(bookAlphabet), target);
+  setupBook(new Array(target.length).fill(" "), splitBookTitle(bookAlphabet), target);
 }
+
+// The flap faces hold their character in a span the stylesheet positions.
+function setFlapFace(face, character) {
+  const span = document.createElement("span");
+  span.textContent = character;
+  face.replaceChildren(span);
+}
+
+// Redraw the current title at a new width without replaying the animation.
+function redrawBookTitle() {
+  const target = buildBookFlaps(bookRows(currentBookTitle));
+  document.querySelectorAll(".split-flap-wrapper-book .flap").forEach((flap, i) => {
+    const character = target[i] || " ";
+    setFlapFace(flap.querySelector(".top-flap-visible"), character);
+    setFlapFace(flap.querySelector(".bottom-flap-visible"), character);
+  });
+  fitBookBoard();
+}
+
+// Re-fit both boards when the viewport changes — rotating a phone can more than
+// double the width available, and a long title may then fit on fewer rows.
+let boardResizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(boardResizeTimer);
+  boardResizeTimer = setTimeout(() => {
+    fitNumberBoard();
+    redrawBookTitle();
+  }, 150);
+});
 
 // Function to update game state indicators
 function updateGameStateIndicators(state) {
@@ -484,36 +637,15 @@ function updateGameStateIndicators(state) {
 
 // Function to reset book display to "Book"
 function resetBookDisplay() {
-  const defaultBookDisplay = ['B', 'o', 'o', 'k'];
-  
-  // Build the flaps dynamically:
-  const container = document.querySelector(".split-flap-wrapper-book");
-  container.innerHTML = ""; // Clear previous content
-  
-  // Create exactly 4 flaps for the word "Book"
-  for (let i = 0; i < 4; i++) {
-    const flap = document.createElement("div");
-    flap.className = "flap flex-center-all";
-    flap.innerHTML = `
-      <div class="top">
-        <div class="top-flap-queued"><span>_</span></div>
-        <div class="top-flap-visible"><span> </span></div>
-      </div>
-      <div class="bottom">
-        <div class="bottom-flap-queued"><span>_</span></div>
-        <div class="bottom-flap-visible"><span> </span></div>
-      </div>
-    `;
-    container.appendChild(flap);
-  }
-  
-  fitBookFlaps(container, 4);
+  currentBookTitle = "Book";
+  const target = buildBookFlaps(bookRows(currentBookTitle));
+  fitBookBoard();
 
   // Animate the flaps to display "Book"
   setupBook(
-    [...new Array(4).fill(' ')],
+    new Array(target.length).fill(" "),
     splitBookTitle(bookAlphabet),
-    defaultBookDisplay
+    target
   );
 }
 
