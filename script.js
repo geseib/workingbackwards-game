@@ -1,7 +1,7 @@
-const books = ["Arhcitecutre", "Culinary", "Interior Design","Law", "Medical", "Film", "Psychology"];
+const DEFAULT_BOOKS = ["Architecture", "Culinary", "Interior Design", "Law", "Medical", "Film", "Psychology"];
 
-const players = ["David", "George", "Hawn", "Josh", "Sam" ]
-  
+const DEFAULT_PLAYERS = ["Player 1", "Player 2"];
+
 // ------- Osmo [https://osmo.supply/] ------- //
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -400,6 +400,14 @@ function setupBook(currentPos, symbolOrder, target) {
   }
 }
 
+// Scale the book display so long titles still fit inside the board.
+const BOOK_FLAP_WIDTH = 214; // 200px flap + margins + borders
+const BOOK_MAX_WIDTH = 460;
+function fitBookFlaps(container, count) {
+  const scale = Math.min(0.3, BOOK_MAX_WIDTH / (count * BOOK_FLAP_WIDTH));
+  container.style.transform = `scale(${scale})`;
+}
+
 // Function to build the book title display dynamically and animate it
 function displayBookTitle() {
   const bookTitle = pickRandomBook();
@@ -429,6 +437,8 @@ function displayBookTitle() {
     container.appendChild(flap);
   });
 
+  fitBookFlaps(container, target.length);
+
   // Animate the book title using the duplicate setup function.
   // (Using splitBookTitle() to ensure proper segmentation of the bookAlphabet.)
   setupBook(currentPos, splitBookTitle(bookAlphabet), target);
@@ -455,7 +465,7 @@ function updateGameStateIndicators(state) {
     
     // Reset bar-raiser display
     if (playersColumn) {
-      playersColumn.innerHTML = '<h2>Bar-raiser: play to find out who</h2>';
+      playersColumn.textContent = 'Bar-raiser: play to find out who';
     }
   } else if (state === 'in-progress') {
     // Update game status
@@ -497,6 +507,8 @@ function resetBookDisplay() {
     container.appendChild(flap);
   }
   
+  fitBookFlaps(container, 4);
+
   // Animate the flaps to display "Book"
   setupBook(
     [...new Array(4).fill(' ')],
@@ -532,38 +544,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Array of book titles
-  
-  // Get the container where the book entries should appear
-  const bookEntriesContainer = document.querySelector('.book-entries');
-  
-  // Loop over the array and create each book entry
-  books.forEach(function(book) {
-    // Create a div for the entry
-    const bookEntry = document.createElement('div');
-    bookEntry.className = 'book-entry';
-    
-    // Create the custom checkbox element
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'book-checkbox';
-    checkbox.value = book;
-    checkbox.checked = true;  // default to checked; adjust as needed
-    
-    // Create the div for the static split-flap style book title
-    const flapStatic = document.createElement('div');
-    flapStatic.className = 'flap-static';
-    flapStatic.textContent = book;
-    
-    // Append the checkbox and title div to the book entry container
-    bookEntry.appendChild(checkbox);
-    bookEntry.appendChild(flapStatic);
-    
-    // Append the complete book entry to the main container
-    bookEntriesContainer.appendChild(bookEntry);
-  });
-});
 
 
 let currentIndex = -1; // Start at -1 to indicate no player has been selected yet
@@ -571,7 +551,14 @@ let currentIndex = -1; // Start at -1 to indicate no player has been selected ye
 
 
 function getNextPlayer() {
-  const gamePlayers = getEnabledPlayers(); 
+  const gamePlayers = getEnabledPlayers();
+  if (gamePlayers.length === 0) {
+    currentIndex = -1;
+    return "No Players";
+  }
+  if (currentIndex >= gamePlayers.length) {
+    currentIndex = -1;
+  }
   if (currentIndex === -1) {
     // First time: pick randomly
     currentIndex = Math.floor(Math.random() * gamePlayers.length);
@@ -595,7 +582,7 @@ function updateBarRaiser() {
   currentBarRaiser = nextPlayer;
   
   // Display the selected player
-  playersColumn.innerHTML = `<h2>Bar-raiser: ${nextPlayer}</h2>`;
+  playersColumn.textContent = `Bar-raiser: ${nextPlayer}`;
   
   // Update the player score row to highlight the bar-raiser
   updatePlayerHighlights();
@@ -624,33 +611,6 @@ function updatePlayerHighlights() {
 // Note: We'll call this function only when the center logo is clicked
 // This is now handled in the centerLogo click event listener
 
-const playerEntriesContainer = document.querySelector('.player-entries');
-
-// Loop over the array and create each player entry
-players.forEach(function(player) {
-  // Create a div for the player entry
-  const playerEntry = document.createElement('div');
-  playerEntry.className = 'player-entry';
-  
-  // Create the custom checkbox element
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.className = 'player-checkbox';
-  checkbox.value = player;
-  checkbox.checked = true;  // default to checked
-  
-  // Create the div to display the player's name
-  const playerName = document.createElement('div');
-  playerName.className = 'player-name';
-  playerName.textContent = player;
-  
-  // Append the checkbox and name div to the player entry container
-  playerEntry.appendChild(checkbox);
-  playerEntry.appendChild(playerName);
-  
-  // Append the complete player entry to the main container
-  playerEntriesContainer.appendChild(playerEntry);
-});
 
 
 // Get the list of enabled books from the checkboxes
@@ -666,113 +626,215 @@ function getEnabledPlayers() {
 }
 
 
+
+// ---------------------------------------------------------------------------
+// Editable lists (books + players)
+// Each row is an inline-editable name with an include checkbox and a remove
+// button. The last row of each list is a ghost "add" row.
+// ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
-  const books = ["Architecture", "Culinary", "Interior Design", "Law", "Medical", "Film", "Psychology"];
-  const players = ["David", "George", "Hawn", "Josh", "Sam"];
+  const STORAGE_KEY = "wb-game-lists-v1";
 
-  const bookEntriesContainer = document.querySelector('.book-entries');
-  const playerEntriesContainer = document.querySelector('.player-entries');
+  const state = loadState();
 
-  const bookForm = document.getElementById("book-form");
-  const newBookInput = document.getElementById("new-book");
-
-  const playerForm = document.getElementById("player-form");
-  const newPlayerInput = document.getElementById("new-player");
-
-  const toggleButton = document.getElementById('toggle-rules-btn');
-  const rulesSection = document.getElementById('rules-section');
-
-  toggleButton.addEventListener('click', function () {
-    rulesSection.classList.toggle('open');
-
-    if (rulesSection.classList.contains('open')) {
-      toggleButton.textContent = 'Hide Rules';
-    } else {
-      toggleButton.textContent = 'Show Rules';
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && Array.isArray(saved.books) && Array.isArray(saved.players)) {
+        return saved;
+      }
+    } catch (err) {
+      /* ignore corrupt storage */
     }
-  });
+    return {
+      books: DEFAULT_BOOKS.map((name) => ({ name, checked: true })),
+      players: DEFAULT_PLAYERS.map((name) => ({ name, checked: true }))
+    };
+  }
 
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      /* storage unavailable — the game still works, it just won't persist */
+    }
+  }
 
-  let currentIndex = -1; // For cycling through players
+  const lists = {
+    book: {
+      items: state.books,
+      container: document.querySelector(".book-entries"),
+      addLabel: "Add a book"
+    },
+    player: {
+      items: state.players,
+      container: document.querySelector(".player-entries"),
+      addLabel: "Add a player"
+    }
+  };
 
-  // Display initial books
-  function displayBooks() {
-    bookEntriesContainer.innerHTML = "";
-    books.forEach(book => {
-      const bookEntry = createEntry(book, 'book');
-      bookEntriesContainer.appendChild(bookEntry);
+  function notify(type) {
+    const container = lists[type].container;
+    container.dispatchEvent(new Event("change", { bubbles: true }));
+    if (type === "book") return;
+    document.dispatchEvent(new CustomEvent("players-changed"));
+  }
+
+  function uniqueName(type, name, ignoreIndex) {
+    const taken = lists[type].items.some(
+      (item, i) => i !== ignoreIndex && item.name.toLowerCase() === name.toLowerCase()
+    );
+    if (!taken) return name;
+    let n = 2;
+    while (
+      lists[type].items.some(
+        (item, i) => i !== ignoreIndex && item.name.toLowerCase() === `${name} ${n}`.toLowerCase()
+      )
+    ) {
+      n++;
+    }
+    return `${name} ${n}`;
+  }
+
+  function render(type) {
+    const { items, container, addLabel } = lists[type];
+    container.innerHTML = "";
+
+    items.forEach((item, index) => {
+      const row = document.createElement("div");
+      row.className = `entry-row ${type}-entry`;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = `${type}-checkbox`;
+      checkbox.value = item.name;
+      checkbox.checked = item.checked;
+      checkbox.setAttribute("aria-label", `Include ${item.name}`);
+      checkbox.addEventListener("change", () => {
+        item.checked = checkbox.checked;
+        saveState();
+        notify(type);
+      });
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "entry-input";
+      input.value = item.name;
+      input.setAttribute("aria-label", `${type} name`);
+
+      const commit = () => {
+        const value = input.value.trim();
+        if (!value) {
+          input.value = item.name;
+          return;
+        }
+        if (value === item.name) return;
+        const previous = item.name;
+        item.name = uniqueName(type, value, index);
+        input.value = item.name;
+        checkbox.value = item.name;
+        saveState();
+        if (type === "player") {
+          document.dispatchEvent(
+            new CustomEvent("player-renamed", { detail: { from: previous, to: item.name } })
+          );
+        }
+        notify(type);
+      };
+
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          input.blur();
+        } else if (event.key === "Escape") {
+          input.value = item.name;
+          input.blur();
+        }
+      });
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "entry-remove";
+      remove.title = `Remove ${item.name}`;
+      remove.setAttribute("aria-label", `Remove ${item.name}`);
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        items.splice(index, 1);
+        saveState();
+        render(type);
+        notify(type);
+      });
+
+      row.append(checkbox, input, remove);
+      container.appendChild(row);
     });
-  }
 
-  // Display initial players
-  function displayPlayers() {
-    playerEntriesContainer.innerHTML = "";
-    players.forEach(player => {
-      const playerEntry = createEntry(player, 'player');
-      playerEntriesContainer.appendChild(playerEntry);
+    // Ghost "add" row, styled like the others.
+    const addRow = document.createElement("div");
+    addRow.className = "entry-row entry-row--add";
+
+    const plus = document.createElement("span");
+    plus.className = "entry-add-icon";
+    plus.textContent = "+";
+
+    const addInput = document.createElement("input");
+    addInput.type = "text";
+    addInput.className = "entry-input entry-add-input";
+    addInput.placeholder = addLabel;
+    addInput.setAttribute("aria-label", addLabel);
+
+    const addItem = () => {
+      const value = addInput.value.trim();
+      if (!value) return;
+      items.push({ name: uniqueName(type, value, -1), checked: true });
+      saveState();
+      render(type);
+      notify(type);
+      // Keep typing: focus the fresh add row.
+      const nextAdd = lists[type].container.querySelector(".entry-add-input");
+      if (nextAdd) nextAdd.focus();
+    };
+
+    addInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addItem();
+      }
     });
+    addInput.addEventListener("blur", addItem);
+    plus.addEventListener("click", () => addInput.focus());
+
+    addRow.append(plus, addInput);
+    container.appendChild(addRow);
   }
 
-  // Create entries for books or players
-  function createEntry(name, type) {
-    const entry = document.createElement('div');
-    entry.className = `${type}-entry`;
+  render("book");
+  render("player");
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = `${type}-checkbox`;
-    checkbox.value = name;
-    checkbox.checked = true;
-
-    const label = document.createElement('label');
-    label.textContent = name;
-
-    entry.appendChild(checkbox);
-    entry.appendChild(label);
-
-    return entry;
-  }
-
-  // Add new book
-  bookForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    const bookName = newBookInput.value.trim();
-    if (bookName) {
-      const bookEntry = createEntry(bookName, 'book');
-      bookEntriesContainer.appendChild(bookEntry);
-      newBookInput.value = "";
-    }
+  // Any change to the player roster restarts the bar-raiser rotation.
+  document.addEventListener("players-changed", () => {
+    currentIndex = -1;
   });
 
-  // Add new player
-  playerForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    const playerName = newPlayerInput.value.trim();
-    if (playerName) {
-      const playerEntry = createEntry(playerName, 'player');
-      playerEntriesContainer.appendChild(playerEntry);
-      newPlayerInput.value = "";
-    }
+  const toggleButton = document.getElementById("toggle-rules-btn");
+  const rulesSection = document.getElementById("rules-section");
+  toggleButton.addEventListener("click", function () {
+    rulesSection.classList.toggle("open");
+    toggleButton.textContent = rulesSection.classList.contains("open")
+      ? "Hide Rules"
+      : "Show Rules";
   });
-
-  // Handle checkbox changes to reset the player cycling
-  playerEntriesContainer.addEventListener('change', (event) => {
-    if (event.target.classList.contains('player-checkbox')) {
-      currentIndex = -1;
-      console.log(`Checkbox for ${event.target.value} changed. currentIndex reset to -1.`);
-    }
-  });
-
-  // Load initial data
-  displayBooks();
-  displayPlayers();
 });
+
 
 // Player Score Manager
 document.addEventListener('DOMContentLoaded', () => {
   // Store player scores
   const playerScores = {};
-  
+  // Live map of player name -> points element
+  const scoreElements = {};
+
   // Get DOM elements
   const playerScoreRow = document.getElementById('player-score-row');
   const playersList = document.getElementById('players-list');
@@ -783,7 +845,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePlayerScoreRow() {
     // Clear current display
     playerScoreRow.innerHTML = '';
-    
+    Object.keys(scoreElements).forEach(key => delete scoreElements[key]);
+
     // Get checked players
     const checkedPlayers = getEnabledPlayers();
     
@@ -804,11 +867,17 @@ document.addEventListener('DOMContentLoaded', () => {
         scoreItem.classList.add('bar-raiser');
       }
       
-      scoreItem.innerHTML = `
-        <div class="player-name">${playerName}</div>
-        <div class="player-points" id="score-${playerName.replace(/\s+/g, '-')}">${playerScores[playerName]}</div>
-      `;
-      
+      const nameEl = document.createElement('div');
+      nameEl.className = 'player-name';
+      nameEl.textContent = playerName;
+
+      const pointsEl = document.createElement('div');
+      pointsEl.className = 'player-points';
+      pointsEl.textContent = playerScores[playerName];
+      scoreElements[playerName] = pointsEl;
+
+      scoreItem.append(nameEl, pointsEl);
+
       // Only add click event for non-bar-raisers
       if (playerName !== currentBarRaiser) {
         scoreItem.addEventListener('click', () => {
@@ -831,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
     playerScores[playerName]++;
     
     // Update display
-    const scoreElement = document.getElementById(`score-${playerName.replace(/\s+/g, '-')}`);
+    const scoreElement = scoreElements[playerName];
     if (scoreElement) {
       scoreElement.textContent = playerScores[playerName];
       
@@ -871,26 +940,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // Listen for player checkbox changes
-  document.querySelector('.player-entries').addEventListener('change', event => {
-    if (event.target.classList.contains('player-checkbox')) {
-      updatePlayerScoreRow();
-      updatePlayersList();
+  // Any roster edit (add, remove, rename, check/uncheck) refreshes the row
+  document.addEventListener('players-changed', () => {
+    updatePlayerScoreRow();
+    updatePlayersList();
+  });
+
+  // Carry a player's score and bar-raiser status across a rename
+  document.addEventListener('player-renamed', event => {
+    const { from, to } = event.detail;
+    if (from in playerScores) {
+      playerScores[to] = playerScores[from];
+      delete playerScores[from];
+    }
+    if (currentBarRaiser === from) {
+      currentBarRaiser = to;
+      if (playersColumn) {
+        playersColumn.textContent = `Bar-raiser: ${to}`;
+      }
     }
   });
-  
-  // Handle new player additions
-  const playerForm = document.getElementById('player-form');
-  if (playerForm) {
-    playerForm.addEventListener('submit', () => {
-      // Use setTimeout to allow DOM to update first
-      setTimeout(() => {
-        updatePlayerScoreRow();
-        updatePlayersList();
-      }, 0);
-    });
-  }
-  
+
+
   // Reset scores button
   resetScoresButton.addEventListener('click', () => {
     // Reset all scores to zero
